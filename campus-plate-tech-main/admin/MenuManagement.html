@@ -1,0 +1,390 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Menu Management | ANU Admin</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+  <style>
+    :root {
+      --red: #ff0000;
+      --yellow: #fac823;
+      --white: #ffffff;
+      --black: #000000;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: #f6f6f6;
+      display: flex;
+      min-height: 100vh;
+      color: #222;
+    }
+
+    .sidebar {
+      width: 240px;
+      background: linear-gradient(180deg, var(--red), var(--yellow));
+      color: var(--white);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px 10px;
+    }
+
+    .sidebar img {
+      width: 85px;
+      height: 85px;
+      margin-bottom: 8px;
+    }
+
+    .sidebar h2 {
+      text-align: center;
+      margin: 5px 0 20px;
+      font-size: 17px;
+    }
+
+    .sidebar a {
+      display: block;
+      color: var(--white);
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin: 3px 0;
+      text-decoration: none;
+      width: 90%;
+      text-align: left;
+      transition: background 0.25s;
+    }
+
+    .sidebar a.active,
+    .sidebar a:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .logout-btn {
+      margin-top: auto;
+      background: var(--black);
+      color: var(--white);
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 90%;
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      background: var(--white);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .topbar h1 {
+      color: var(--red);
+      font-size: 20px;
+      margin: 0;
+    }
+
+    .content {
+      padding: 25px;
+    }
+
+    .form-inline {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-bottom: 15px;
+      align-items: center;
+    }
+
+    .form-inline input[type="text"],
+    .form-inline input[type="date"],
+    .form-inline select,
+    .form-inline input[type="file"] {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--red), var(--yellow));
+      color: #fff;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.15);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: #fff;
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+    }
+
+    th {
+      background: var(--red);
+      color: #fff;
+    }
+
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
+    tr:hover {
+      background: #f1f1f1;
+    }
+
+    .action-btns button {
+      margin-right: 5px;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      color: #fff;
+      font-size: 13px;
+    }
+
+    .edit { background: #2196f3; }
+    .delete { background: #e53935; }
+
+    .notice {
+      color: var(--red);
+      font-weight: bold;
+      margin-top: 10px;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #666;
+    }
+
+    @media (max-width: 900px) {
+      .sidebar { display: none; }
+      body { padding-top: 12px; }
+      .main { padding: 0 12px; }
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <img src="../public/ANU-Logo-PNG-logo (1).png" alt="ANU Logo">
+    
+    <a href="Dashboard.html">Dashboard</a>
+    <a href="BookingManagement.html">Booking Management</a>
+    <a href="MenuManagement.html" class="active">Menu Management</a>
+    <a href="MealValidation.html">Meal Validation</a>
+    <a href="Report.html">Reports</a>
+    <a href="UserManagement.html" class="restricted">User Management</a>
+    <a href="Setting.html" class="restricted">Settings</a>
+    <div class="logout-btn" id="logoutBtn">Logout</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h1>Menu Management</h1>
+      <div><span id="welcomeText" class="small"></span></div>
+    </div>
+
+    <div class="content">
+      <div class="form-inline">
+        <input type="text" id="mealName" placeholder="Meal name" />
+        <select id="mealType">
+          <option value="">Select Type</option>
+          <option value="Breakfast">Breakfast</option>
+          <option value="Lunch">Lunch</option>
+          <option value="Dinner">Dinner</option>
+        </select>
+        <input type="date" id="mealDate" />
+        <button class="btn" id="addMeal">Add Meal</button>
+
+        <input type="file" id="fileUpload" accept=".xlsx,.xls,.csv" />
+        <button class="btn" id="uploadFile">Upload File</button>
+      </div>
+
+      <div class="small">Accepted file columns: <strong>Meal, Type, Date</strong></div>
+
+      <table id="menuTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Meal</th>
+            <th>Type</th>
+            <th>Date</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+
+      <div class="notice" id="syncNotice"></div>
+    </div>
+  </div>
+
+  <script>
+    (() => {
+      const KEY = 'anu_menu';
+      let menuData = JSON.parse(localStorage.getItem(KEY)) || [];
+
+      const tbody = document.querySelector('#menuTable tbody');
+      const addBtn = document.getElementById('addMeal');
+      const fileInput = document.getElementById('fileUpload');
+      const uploadBtn = document.getElementById('uploadFile');
+      const syncNotice = document.getElementById('syncNotice');
+      const logoutBtn = document.getElementById('logoutBtn');
+      const welcomeText = document.getElementById('welcomeText');
+
+      function broadcastUpdate() {
+        localStorage.setItem('menu_last_updated', new Date().toISOString());
+      }
+
+      function renderTable() {
+        tbody.innerHTML = '';
+        menuData.forEach((m, i) => {
+          const tr = document.createElement('tr');
+          tr.innerHTML = `
+            <td>${i + 1}</td>
+            <td>${m.name}</td>
+            <td>${m.type}</td>
+            <td>${m.date}</td>
+            <td class="action-btns">
+              <button class="edit" data-id="${m.id}">Edit</button>
+              <button class="delete" data-id="${m.id}">Delete</button>
+            </td>`;
+          tbody.appendChild(tr);
+        });
+        localStorage.setItem(KEY, JSON.stringify(menuData));
+        broadcastUpdate();
+        syncNotice.textContent = '✅ Menu synced with student dashboard.';
+        setTimeout(() => (syncNotice.textContent = ''), 1500);
+      }
+
+      // Add new meal
+      addBtn.addEventListener('click', () => {
+        const name = document.getElementById('mealName').value.trim();
+        const type = document.getElementById('mealType').value;
+        const date = document.getElementById('mealDate').value;
+        if (!name || !type || !date) return alert('Please fill all fields.');
+        menuData.push({ id: Date.now(), name, type, date });
+        renderTable();
+        document.getElementById('mealName').value = '';
+        document.getElementById('mealType').value = '';
+        document.getElementById('mealDate').value = '';
+      });
+
+      // Edit/Delete
+      tbody.addEventListener('click', (e) => {
+        const id = Number(e.target.dataset.id);
+        if (e.target.classList.contains('edit')) {
+          const meal = menuData.find(m => m.id === id);
+          if (!meal) return;
+          const newName = prompt('Edit meal name:', meal.name);
+          const newType = prompt('Edit type (Breakfast/Lunch/Dinner):', meal.type);
+          const newDate = prompt('Edit date (YYYY-MM-DD):', meal.date);
+          if (newName && newType && newDate) {
+            meal.name = newName;
+            meal.type = newType;
+            meal.date = newDate;
+            renderTable();
+          }
+        } else if (e.target.classList.contains('delete')) {
+          if (confirm('Delete this meal?')) {
+            menuData = menuData.filter(m => m.id !== id);
+            renderTable();
+          }
+        }
+      });
+
+      // Upload Excel/CSV
+      uploadBtn.addEventListener('click', () => {
+        const file = fileInput.files[0];
+        if (!file) return alert('Select a file first.');
+        const reader = new FileReader();
+        if (file.name.endsWith('.csv')) {
+          reader.onload = e => {
+            const lines = e.target.result.split(/\r?\n/).filter(Boolean);
+            const headers = lines[0].split(',').map(h => h.trim().toLowerCase());
+            const mealIdx = headers.indexOf('meal'), typeIdx = headers.indexOf('type'), dateIdx = headers.indexOf('date');
+            for (let i = 1; i < lines.length; i++) {
+              const cols = lines[i].split(',');
+              if (cols[mealIdx] && cols[typeIdx] && cols[dateIdx])
+                menuData.push({
+                  id: Date.now() + Math.random(),
+                  name: cols[mealIdx].trim(),
+                  type: cols[typeIdx].trim(),
+                  date: cols[dateIdx].trim()
+                });
+            }
+            renderTable();
+          };
+          reader.readAsText(file);
+        } else {
+          reader.onload = e => {
+            const data = new Uint8Array(e.target.result);
+            const wb = XLSX.read(data, { type: 'array' });
+            const sheet = wb.Sheets[wb.SheetNames[0]];
+            const json = XLSX.utils.sheet_to_json(sheet);
+            json.forEach(r => {
+              if (r.Meal && r.Type && r.Date)
+                menuData.push({
+                  id: Date.now() + Math.random(),
+                  name: r.Meal,
+                  type: r.Type,
+                  date: r.Date
+                });
+            });
+            renderTable();
+          };
+          reader.readAsArrayBuffer(file);
+        }
+      });
+
+      // Logout
+      logoutBtn.addEventListener('click', () => {
+        localStorage.removeItem('anu_session');
+        window.location.href = '../login.html';
+      });
+
+      // Initialization
+      window.addEventListener('DOMContentLoaded', () => {
+        const session = JSON.parse(localStorage.getItem('anu_session'));
+        if (!session) {
+          alert('Session expired. Please log in again.');
+          window.location.href = '../login.html';
+          return;
+        }
+
+        welcomeText.textContent = `Welcome, ${session.role} (${session.username})`;
+
+        if (session.role === 'Super Admin') {
+          document.querySelectorAll('.restricted').forEach(a => (a.style.display = 'block'));
+        } else {
+          document.querySelectorAll('.restricted').forEach(a => (a.style.display = 'none'));
+        }
+
+        renderTable();
+      });
+    })();
+  </script>
+</body>
+</html>

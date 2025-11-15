@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Booking Management | ANU Admin</title>
+  <style>
+    :root {
+      --red: #ff0000;
+      --yellow: #fac823;
+      --white: #ffffff;
+      --black: #000000;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: #f6f6f6;
+      color: #333;
+      display: flex;
+      min-height: 100vh;
+    }
+
+    .sidebar {
+      width: 240px;
+      background: linear-gradient(180deg, var(--red), var(--yellow));
+      color: var(--white);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px 10px;
+    }
+
+    .sidebar img {
+      width: 85px;
+      height: 85px;
+      margin-bottom: 8px;
+    }
+
+    .sidebar h2 {
+      text-align: center;
+      margin: 5px 0 20px;
+      font-size: 17px;
+    }
+
+    .sidebar a {
+      display: block;
+      color: var(--white);
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin: 3px 0;
+      text-decoration: none;
+      transition: background 0.3s;
+      width: 90%;
+      text-align: left;
+    }
+
+    .sidebar a.active,
+    .sidebar a:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .logout-btn {
+      margin-top: auto;
+      background: var(--black);
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 90%;
+      color: var(--white);
+    }
+
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      background: var(--white);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+
+    .topbar h1 {
+      color: var(--red);
+      font-size: 20px;
+      margin: 0;
+    }
+
+    .content {
+      padding: 25px;
+    }
+
+    .actions {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+
+    .actions input {
+      padding: 8px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--red), var(--yellow));
+      color: #fff;
+      border: none;
+      padding: 8px 15px;
+      border-radius: 6px;
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      background: var(--white);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 12px 15px;
+      text-align: left;
+    }
+
+    th {
+      background: var(--red);
+      color: #fff;
+    }
+
+    tr:nth-child(even) {
+      background: #f9f9f9;
+    }
+
+    tr:hover {
+      background: #f1f1f1;
+    }
+
+    .status {
+      font-weight: bold;
+      text-transform: capitalize;
+    }
+
+    .status.approved { color: green; }
+    .status.pending { color: orange; }
+    .status.rejected { color: red; }
+
+    .action-btns button {
+      margin-right: 5px;
+      border: none;
+      padding: 6px 10px;
+      border-radius: 5px;
+      cursor: pointer;
+      color: #fff;
+      font-size: 13px;
+    }
+
+    .approve { background: green; }
+    .reject { background: red; }
+
+    .toast {
+      position: fixed;
+      bottom: 25px;
+      right: 25px;
+      background: #333;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 6px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+      opacity: 0;
+      transform: translateY(30px);
+      transition: all 0.4s ease;
+      z-index: 999;
+    }
+
+    .toast.show {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <img src="../public/ANU-Logo-PNG-logo (1).png" alt="ANU Logo">
+
+    <a href="Dashboard.html">Dashboard</a>
+    <a href="BookingManagement.html" class="active">Booking Management</a>
+    <a href="MenuManagement.html">Menu Management</a>
+    <a href="MealValidation.html">Meal Validation</a>
+    <a href="Report.html">Reports</a>
+    <a href="UserManagement.html" id="userManagementLink">User Management</a>
+    <a href="Setting.html" id="settingsLink">Settings</a>
+    <div class="logout-btn" id="logoutBtn">Logout</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h1>Booking Management</h1>
+      <span id="welcomeText"></span>
+      <button class="btn" id="resetData">Reset Data</button>
+    </div>
+
+    <div class="content">
+      <div class="actions">
+        <input type="text" id="searchInput" placeholder="Search by student name..." />
+      </div>
+
+      <table id="bookingTable">
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Student Name</th>
+            <th>Meal</th>
+            <th>Date</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+  </div>
+
+  <div class="toast" id="toast">New booking received!</div>
+
+  <script>
+    const tableBody = document.querySelector("#bookingTable tbody");
+    const searchInput = document.getElementById("searchInput");
+    const resetBtn = document.getElementById("resetData");
+    const logoutBtn = document.getElementById("logoutBtn");
+    const welcomeText = document.getElementById("welcomeText");
+    const toast = document.getElementById("toast");
+    const userManagementLink = document.getElementById("userManagementLink");
+    const settingsLink = document.getElementById("settingsLink");
+
+    let bookings = JSON.parse(localStorage.getItem("anu_bookings")) || [];
+    const users = JSON.parse(localStorage.getItem("anu_users")) || [];
+
+    function resolveStudentName(b) {
+      if (b.student && b.student !== "undefined") return b.student;
+      if (b.fullname && b.fullname !== "undefined") return b.fullname;
+      if (b.username) {
+        const u = users.find(u => u.username === b.username);
+        return u ? (u.fullname || u.username) : b.username;
+      }
+      if (b.userId) {
+        const u = users.find(u => u.id === b.userId);
+        return u ? (u.fullname || u.username) : "Unknown Student";
+      }
+      return "Unknown Student";
+    }
+
+    function resolveMealName(b) {
+      if (b.meal && b.meal !== "undefined") return b.meal;
+      if (b.mealName) return b.mealName;
+      if (b.menuId) {
+        const menu = JSON.parse(localStorage.getItem("anu_menu")) || [];
+        const m = menu.find(m => m.id === b.menuId);
+        return m ? m.name : "—";
+      }
+      return "—";
+    }
+
+    function showToast(message) {
+      toast.textContent = message;
+      toast.classList.add("show");
+      setTimeout(() => toast.classList.remove("show"), 3000);
+    }
+
+    function renderTable(data) {
+      tableBody.innerHTML = "";
+      data.forEach((b, i) => {
+        const studentName = resolveStudentName(b);
+        const mealName = resolveMealName(b);
+        const row = document.createElement("tr");
+        row.innerHTML = `
+          <td>${i + 1}</td>
+          <td>${studentName}</td>
+          <td>${mealName}</td>
+          <td>${b.date || "—"}</td>
+          <td class="status ${b.status || "pending"}">${b.status || "pending"}</td>
+          <td class="action-btns">
+            <button class="approve">Approve</button>
+            <button class="reject">Reject</button>
+          </td>`;
+        tableBody.appendChild(row);
+
+        row.querySelector(".approve").onclick = () => updateStatus(b.id, "approved");
+        row.querySelector(".reject").onclick = () => updateStatus(b.id, "rejected");
+      });
+    }
+
+    function updateStatus(id, newStatus) {
+      bookings = bookings.map(b => b.id === id ? { ...b, status: newStatus } : b);
+      localStorage.setItem("anu_bookings", JSON.stringify(bookings));
+      renderTable(bookings);
+    }
+
+    searchInput.addEventListener("input", e => {
+      const term = e.target.value.toLowerCase();
+      const filtered = bookings.filter(b => resolveStudentName(b).toLowerCase().includes(term));
+      renderTable(filtered);
+    });
+
+    resetBtn.addEventListener("click", () => {
+      localStorage.removeItem("anu_bookings");
+      bookings = [];
+      renderTable(bookings);
+      showToast("All bookings cleared.");
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem("anu_session");
+      window.location.href = "../login.html";
+    });
+
+    window.addEventListener("storage", e => {
+      if (e.key === "anu_bookings") {
+        const updated = JSON.parse(localStorage.getItem("anu_bookings")) || [];
+        if (updated.length > bookings.length) {
+          showToast("Live Updating: New booking received!");
+        }
+        bookings = updated;
+        renderTable(bookings);
+      }
+    });
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const session = JSON.parse(localStorage.getItem("anu_session"));
+      if (!session) {
+        alert("Please login first.");
+        window.location.href = "../login.html";
+        return;
+      }
+
+      welcomeText.textContent = `Welcome, ${session.role} (${session.username})`;
+
+      // 🔒 Hide restricted pages for Admins only
+      if (session.role.toLowerCase() === "admin") {
+        userManagementLink.style.display = "none";
+        settingsLink.style.display = "none";
+      }
+
+      renderTable(bookings);
+    });
+  </script>
+</body>
+</html>

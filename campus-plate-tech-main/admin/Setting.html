@@ -1,0 +1,415 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width,initial-scale=1" />
+  <title>Settings | ANU Meal Booking</title>
+  <style>
+    :root {
+      --red: #ff0000;
+      --yellow: #fac823;
+      --white: #ffffff;
+      --black: #000;
+    }
+
+    body {
+      font-family: "Segoe UI", sans-serif;
+      margin: 0;
+      display: flex;
+      min-height: 100vh;
+      color: #222;
+      background: #f4f4f4;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 250px;
+      background: linear-gradient(180deg, var(--red), var(--yellow));
+      color: #fff;
+      padding: 25px;
+      box-sizing: border-box;
+      position: relative;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .sidebar h2 {
+      text-align: center;
+      margin: 0 0 25px;
+    }
+
+    .sidebar a {
+      display: block;
+      color: #fff;
+      text-decoration: none;
+      padding: 10px 14px;
+      border-radius: 6px;
+      margin: 5px 0;
+      transition: background 0.3s;
+    }
+
+    .sidebar a:hover {
+      background: rgba(255, 255, 255, 0.3);
+    }
+
+    .sidebar a.active {
+      background: rgba(255, 255, 255, 0.25);
+      font-weight: 600;
+    }
+
+    /* Logout dropdown */
+    .logout-container {
+      margin-top: auto;
+      position: relative;
+    }
+
+    .logout-btn {
+      width: 100%;
+      background: rgba(0, 0, 0, 0.25);
+      border: none;
+      color: #fff;
+      padding: 10px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+
+    .logout-btn:hover {
+      background: #000;
+    }
+
+    .logout-menu {
+      display: none;
+      position: absolute;
+      bottom: 50px;
+      left: 0;
+      background: rgba(255, 255, 255, 0.9);
+      color: #000;
+      border-radius: 6px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+      padding: 8px;
+      width: 100%;
+      text-align: left;
+    }
+
+    .logout-menu a {
+      display: block;
+      color: #000;
+      padding: 8px 10px;
+      text-decoration: none;
+      border-radius: 5px;
+    }
+
+    .logout-menu a:hover {
+      background: #f5f5f5;
+    }
+
+    /* Content */
+    .content {
+      flex: 1;
+      padding: 30px;
+      overflow-y: auto;
+    }
+
+    h1 {
+      color: var(--red);
+      margin-bottom: 20px;
+    }
+
+    .settings-section {
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 25px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+      transition: transform 0.3s;
+    }
+
+    .settings-section:hover {
+      transform: scale(1.01);
+    }
+
+    .settings-section h3 {
+      color: var(--red);
+      margin-top: 0;
+      padding-bottom: 6px;
+      border-bottom: 2px solid var(--yellow);
+    }
+
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: 600;
+    }
+
+    input[type="text"], input[type="email"], input[type="time"], select {
+      width: 100%;
+      padding: 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      margin-top: 5px;
+      margin-bottom: 10px;
+      box-sizing: border-box;
+    }
+
+    .toggle {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      margin: 10px 0;
+    }
+
+    .btn {
+      background: linear-gradient(135deg, var(--red), var(--yellow));
+      color: #fff;
+      border: none;
+      padding: 10px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: 0.3s;
+    }
+
+    .btn:hover {
+      opacity: 0.9;
+    }
+
+    .small {
+      font-size: 13px;
+      color: #555;
+    }
+
+    /* Logs */
+    .logs-section {
+      background: #fff;
+      border: 1px solid #eee;
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 3px 10px rgba(0,0,0,0.05);
+      max-height: 250px;
+      overflow-y: auto;
+    }
+
+    .log-item {
+      border-left: 4px solid var(--red);
+      padding-left: 10px;
+      margin-bottom: 10px;
+      font-size: 14px;
+      color: #333;
+    }
+
+    /* Toasts */
+    #toast {
+      position: fixed;
+      right: 20px;
+      top: 20px;
+      background: #333;
+      color: #fff;
+      padding: 12px 18px;
+      border-radius: 8px;
+      opacity: 0;
+      transition: opacity .25s;
+      z-index: 9999;
+      box-shadow: 0 3px 12px rgba(0,0,0,0.2);
+    }
+
+    #toast.show {
+      opacity: 1;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- Sidebar -->
+  <aside class="sidebar">
+    <h2>ANU Admin</h2>
+    <a href="Dashboard.html">Dashboard</a>
+    <a href="MenuManagement.html">Menu Management</a>
+    <a href="MealValidation.html">Meal Validation</a>
+    <a href="Report.html">Reports</a>
+    <a href="UserManagement.html">User Management</a>
+    <a href="Setting.html" class="active">Settings</a>
+
+    <div class="logout-container">
+      <button class="logout-btn" id="logoutMain">Logout ▾</button>
+      <div class="logout-menu" id="logoutMenu">
+        <a href="#" id="confirmLogout">Confirm Logout</a>
+        <a href="#">Cancel</a>
+      </div>
+    </div>
+  </aside>
+
+  <!-- Main content -->
+  <main class="content">
+    <h1>System Settings</h1>
+
+    <div class="settings-section">
+      <h3>General Configuration</h3>
+      <label>Organization Name</label>
+      <input id="orgName" type="text" placeholder="Africa Nazarene University">
+      <label>System Email</label>
+      <input id="orgEmail" type="email" placeholder="support@anu.ac.ke">
+      <label>Timezone</label>
+      <select id="timezone">
+        <option value="Africa/Nairobi">Africa/Nairobi</option>
+        <option value="UTC">UTC</option>
+      </select>
+    </div>
+
+    <div class="settings-section">
+      <h3>Booking Window</h3>
+      <label>Booking Opens At</label>
+      <input id="bookingOpen" type="time" />
+      <label>Booking Closes At</label>
+      <input id="bookingClose" type="time" />
+      <div class="toggle">
+        <input id="autoReset" type="checkbox" />
+        <label for="autoReset">Automatically reset bookings daily</label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>System Operations</h3>
+      <div class="toggle">
+        <input id="maintenanceMode" type="checkbox" />
+        <label>Enable Maintenance Mode</label>
+      </div>
+      <div class="toggle">
+        <input id="sidebarCollapse" type="checkbox" />
+        <label>Collapsible Sidebar</label>
+      </div>
+    </div>
+
+    <div class="settings-section">
+      <h3>Notifications</h3>
+      <div class="toggle">
+        <input id="mealAlerts" type="checkbox" />
+        <label>Enable Meal Alerts</label>
+      </div>
+      <div class="toggle">
+        <input id="emailReports" type="checkbox" />
+        <label>Email Reports to Admins</label>
+      </div>
+    </div>
+
+    <button id="saveSettings" class="btn">Save Settings</button>
+
+    <div class="settings-section">
+      <h3>System Logs</h3>
+      <div class="logs-section" id="logFeed"></div>
+    </div>
+  </main>
+
+  <div id="toast"></div>
+
+  <script>
+    const STORAGE_KEY = 'anu_settings';
+    const LOGS_KEY = 'anu_system_logs';
+    const defaults = {
+      orgName: 'Africa Nazarene University',
+      orgEmail: 'support@anu.ac.ke',
+      timezone: 'Africa/Nairobi',
+      bookingOpen: '06:00',
+      bookingClose: '10:00',
+      autoReset: true,
+      maintenanceMode: false,
+      sidebarCollapse: false,
+      mealAlerts: true,
+      emailReports: false
+    };
+
+    const $ = id => document.getElementById(id);
+    const toast = $('toast');
+    const logFeed = $('logFeed');
+
+    function showToast(msg, ok = true) {
+      toast.textContent = msg;
+      toast.style.background = ok ? '#2e7d32' : '#c62828';
+      toast.classList.add('show');
+      clearTimeout(showToast._t);
+      showToast._t = setTimeout(() => toast.classList.remove('show'), 2200);
+    }
+
+    function loadSettings() {
+      try {
+        return JSON.parse(localStorage.getItem(STORAGE_KEY)) || defaults;
+      } catch {
+        return defaults;
+      }
+    }
+
+    function populateForm(s) {
+      $('orgName').value = s.orgName;
+      $('orgEmail').value = s.orgEmail;
+      $('timezone').value = s.timezone;
+      $('bookingOpen').value = s.bookingOpen;
+      $('bookingClose').value = s.bookingClose;
+      $('autoReset').checked = s.autoReset;
+      $('maintenanceMode').checked = s.maintenanceMode;
+      $('sidebarCollapse').checked = s.sidebarCollapse;
+      $('mealAlerts').checked = s.mealAlerts;
+      $('emailReports').checked = s.emailReports;
+    }
+
+    function getFormData() {
+      return {
+        orgName: $('orgName').value,
+        orgEmail: $('orgEmail').value,
+        timezone: $('timezone').value,
+        bookingOpen: $('bookingOpen').value,
+        bookingClose: $('bookingClose').value,
+        autoReset: $('autoReset').checked,
+        maintenanceMode: $('maintenanceMode').checked,
+        sidebarCollapse: $('sidebarCollapse').checked,
+        mealAlerts: $('mealAlerts').checked,
+        emailReports: $('emailReports').checked
+      };
+    }
+
+    function logEvent(message) {
+      const logs = JSON.parse(localStorage.getItem(LOGS_KEY)) || [];
+      const entry = { time: new Date().toLocaleString(), message };
+      logs.unshift(entry);
+      localStorage.setItem(LOGS_KEY, JSON.stringify(logs));
+      renderLogs();
+    }
+
+    function renderLogs() {
+      const logs = JSON.parse(localStorage.getItem(LOGS_KEY)) || [];
+      logFeed.innerHTML = logs.map(l => `<div class="log-item"><strong>${l.time}</strong> — ${l.message}</div>`).join('');
+    }
+
+    $('saveSettings').addEventListener('click', () => {
+      const newSettings = getFormData();
+      localStorage.setItem(STORAGE_KEY, JSON.stringify(newSettings));
+      window.dispatchEvent(new CustomEvent('settingsUpdated', { detail: newSettings }));
+      logEvent('Settings updated successfully');
+      showToast('Settings saved successfully');
+    });
+
+    // Load initial
+    populateForm(loadSettings());
+    renderLogs();
+
+    // Logout dropdown
+    const logoutMain = $('logoutMain');
+    const logoutMenu = $('logoutMenu');
+    logoutMain.addEventListener('click', () => {
+      logoutMenu.style.display = logoutMenu.style.display === 'block' ? 'none' : 'block';
+    });
+    $('confirmLogout').addEventListener('click', () => {
+      localStorage.removeItem('anu_session');
+      logEvent('Super Admin logged out');
+      window.location.href = '../login.html';
+    });
+
+    // Sync with other tabs
+    window.addEventListener('storage', e => {
+      if (e.key === STORAGE_KEY) populateForm(loadSettings());
+      if (e.key === LOGS_KEY) renderLogs();
+    });
+  </script>
+</body>
+</html>

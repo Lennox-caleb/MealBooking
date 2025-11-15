@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>ANU Student Dashboard — Live</title>
+
+<!-- QR code library -->
+<script src="https://cdn.jsdelivr.net/gh/davidshimjs/qrcodejs/qrcode.min.js"></script>
+
+<style>
+:root{
+  --primary:#ff0000; --accent:#fac823; --white:#fff; --black:#000;
+  --muted:#f4f4f4;
+}
+body{ margin:0; font-family: "Segoe UI",sans-serif; background:var(--muted); color:var(--black) }
+.navbar{ background:var(--primary); color:var(--white); padding:10px 20px; display:flex; justify-content:space-between; align-items:center;}
+.navbar img{ height:40px }
+.navbar button{ background:var(--accent); color:var(--black); border:none; padding:6px 12px; border-radius:6px; cursor:pointer; font-weight:700 }
+
+.container{ max-width:1000px; margin:28px auto; padding:0 16px; }
+.card{ background:var(--white); border-radius:12px; padding:18px; box-shadow:0 2px 8px rgba(0,0,0,0.08); margin-bottom:18px }
+.card-header{ display:flex; justify-content:space-between; align-items:center }
+.badge{ padding:6px 10px; border-radius:8px; color:var(--white); font-weight:700 }
+.badge.open{ background:var(--primary) }
+.badge.closed{ background:gray }
+.menu-grid{ display:grid; grid-template-columns:repeat(auto-fit,minmax(220px,1fr)); gap:12px; margin-top:12px }
+.menu-item{ border:1px solid #e6e6e6; padding:12px; border-radius:8px; background:#fff }
+.menu-item h4{ margin:0 0 8px; color:var(--primary) }
+.menu-item p{ margin:6px 0; color:#333; font-size:0.95em }
+.menu-item button{ display:block; width:100%; margin-top:8px; padding:8px; background:var(--accent); border:none; border-radius:6px; font-weight:700; cursor:pointer }
+
+.booking-actions{ display:flex; gap:10px; margin-top:14px }
+.booking-actions select, .booking-actions button{ flex:1; padding:8px; border-radius:6px; border:1px solid #ccc }
+.booking-actions button{ background:var(--primary); color:#fff; border:none; cursor:pointer }
+.booking-actions button:disabled{ background:#bbb; cursor:not-allowed }
+
+.table-container table{ width:100%; border-collapse:collapse; margin-top:10px }
+.table-container th, .table-container td{ padding:8px; border-bottom:1px solid #eee; text-align:left }
+.text-center{ text-align:center }
+
+.toast{ position:fixed; bottom:18px; right:18px; background:var(--accent); padding:10px 14px; border-radius:8px; display:none; font-weight:700; color:var(--black); box-shadow:0 2px 8px rgba(0,0,0,0.12) }
+
+/* QR modal */
+.modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.45); display:none; align-items:center; justify-content:center; z-index:9999 }
+.modal{ background:var(--white); padding:18px; border-radius:10px; width:320px; box-shadow:0 10px 30px rgba(0,0,0,0.25); text-align:center }
+.modal h3{ margin:0 0 10px; color:var(--primary) }
+.modal .qr-wrap{ margin:8px 0 }
+.modal button{ margin-top:10px; padding:8px 12px; border-radius:6px; border:none; cursor:pointer; font-weight:600 }
+.modal .download{ background:var(--primary); color:#fff }
+.modal .close{ background:#ddd; color:#111; margin-left:8px }
+.small { font-size:0.9em; color:#555; margin-top:8px }
+</style>
+</head>
+<body>
+
+<header class="navbar">
+  <div style="display:flex;align-items:center;gap:12px">
+    <img src="public/ANU-Landscape-Logo.png" alt="ANU">
+    <strong>ANU Student Dashboard</strong>
+  </div>
+  <button id="logoutBtn">Logout</button>
+</header>
+
+<main class="container">
+  <section class="card">
+    <div class="card-header">
+      <div>
+        <h2 style="margin:0">Today's Menu</h2>
+        <div id="bookingStatusText" class="small">Loading settings…</div>
+      </div>
+      <div>
+        <span id="bookingBadge" class="badge">Checking…</span>
+      </div>
+    </div>
+
+    <div id="menuList" class="menu-grid" aria-live="polite"></div>
+
+    <div class="booking-actions">
+      <select id="menuSelect" aria-label="Select meal"><option value="">Select a meal</option></select>
+      <button id="bookBtn">Book Meal</button>
+    </div>
+    <div id="countdown" class="small"></div>
+  </section>
+
+  <section class="card">
+    <div class="card-header"><h2 style="margin:0">My Bookings</h2></div>
+    <div class="table-container">
+      <table>
+        <thead>
+          <tr><th>Date</th><th>Meal</th><th>Code</th><th>Status</th><th>QR</th><th>Action</th></tr>
+        </thead>
+        <tbody id="bookingsTable"></tbody>
+      </table>
+    </div>
+  </section>
+</main>
+
+<div id="toast" class="toast"></div>
+
+<!-- QR Modal -->
+<div id="qrModalBackdrop" class="modal-backdrop" role="dialog" aria-modal="true">
+  <div class="modal" role="document">
+    <h3>Booking QR</h3>
+    <div id="qrModalText" class="small"></div>
+    <div id="qrWrap" class="qr-wrap"></div>
+    <div style="margin-top:8px">
+      <button id="downloadQr" class="download">Download QR</button>
+      <button id="closeQr" class="close">Close</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ------------- Keys & helpers ------------- */
+const KEYS = {
+  MENU: 'anu_menu',
+  BOOKINGS: 'anu_bookings',
+  SETTINGS: 'anu_settings',
+  SESSION: 'anu_session'
+};
+
+const escapeHtml = s => String(s||'').replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":"&#39;"}[ch]));
+
+const read = (k, fallback) => {
+  try { const r = localStorage.getItem(k); return r ? JSON.parse(r) : (fallback===undefined?null:fallback) }
+  catch(e){ console.error('read JSON',k,e); return fallback===undefined?null:fallback }
+};
+const write = (k, v) => {
+  localStorage.setItem(k, JSON.stringify(v));
+  // same-tab listeners: emit custom event for immediate UI update in current tab
+  window.dispatchEvent(new CustomEvent('localStoreChanged', { detail: { key: k, value: v }}));
+};
+
+/* ------------- DOM refs ------------- */
+const menuList = document.getElementById('menuList');
+const menuSelect = document.getElementById('menuSelect');
+const bookBtn = document.getElementById('bookBtn');
+const bookingsTable = document.getElementById('bookingsTable');
+const bookingBadge = document.getElementById('bookingBadge');
+const bookingStatusText = document.getElementById('bookingStatusText');
+const countdownEl = document.getElementById('countdown');
+const toastEl = document.getElementById('toast');
+const logoutBtn = document.getElementById('logoutBtn');
+
+const qrBackdrop = document.getElementById('qrModalBackdrop');
+const qrWrap = document.getElementById('qrWrap');
+const qrModalText = document.getElementById('qrModalText');
+const downloadQrBtn = document.getElementById('downloadQr');
+const closeQrBtn = document.getElementById('closeQr');
+
+/* ------------- Session fallback ------------- */
+const session = read(KEYS.SESSION, null) || { username: 'student', id: 'S001' };
+
+/* ------------- Toast ------------- */
+let toastTimer;
+function showToast(msg, ms=2200){
+  clearTimeout(toastTimer);
+  toastEl.textContent = msg;
+  toastEl.style.display = 'block';
+  toastTimer = setTimeout(()=> toastEl.style.display = 'none', ms);
+}
+
+/* ------------- Settings / time helpers ------------- */
+function getSettings(){
+  return read(KEYS.SETTINGS, { bookingOpen:'06:00', bookingClose:'10:00', maintenanceMode:false, openTime: '08:00', closeTime:'17:00' }) || {};
+}
+function isOpenNow(settings){
+  if (!settings) settings = getSettings();
+  if (settings.maintenanceMode) return false;
+  const now = new Date();
+  const [oh,om] = (settings.bookingOpen || settings.openTime || '06:00').split(':').map(Number);
+  const [ch,cm] = (settings.bookingClose || settings.closeTime || '10:00').split(':').map(Number);
+  const start = new Date(); start.setHours(oh,om,0,0);
+  const end = new Date(); end.setHours(ch,cm,0,0);
+  return now >= start && now <= end;
+}
+function timeDiffHuman(ms){
+  if (ms <= 0) return '';
+  const sec = Math.floor(ms/1000);
+  const h = Math.floor(sec/3600);
+  const m = Math.floor((sec%3600)/60);
+  return `${h}h ${m}m`;
+}
+function updateBadgeAndCountdown(){
+  const s = getSettings();
+  const open = isOpenNow(s);
+  bookingBadge.textContent = open ? 'Booking Open' : (s.maintenanceMode ? 'Maintenance' : 'Booking Closed');
+  bookingBadge.className = open ? 'badge open' : 'badge closed';
+  bookingStatusText.textContent = open ? `Open until ${s.bookingClose || s.closeTime || s.bookingClose || ''}` : `Closed — controlled by settings`;
+  // compute diff to next boundary
+  const now = new Date();
+  const [oh,om] = (s.bookingOpen || s.openTime || '06:00').split(':').map(Number);
+  const [ch,cm] = (s.bookingClose || s.closeTime || '10:00').split(':').map(Number);
+  const openT = new Date(); openT.setHours(oh,om,0,0);
+  const closeT = new Date(); closeT.setHours(ch,cm,0,0);
+  let diff = open ? (closeT - now) : (openT - now);
+  if (diff > 0){
+    countdownEl.textContent = open ? `Closes in ${timeDiffHuman(diff)}` : `Reopens in ${timeDiffHuman(diff)}`;
+  } else countdownEl.textContent = '';
+  // disable booking button if not open
+  bookBtn.disabled = !open;
+}
+
+/* ------------- Menu rendering & realtime ------------- */
+function loadTodayMenus(){
+  const menus = read(KEYS.MENU, []) || [];
+  const today = new Date().toISOString().slice(0,10);
+  return menus.filter(m => m.date === today);
+}
+
+function renderMenus(){
+  const menus = loadTodayMenus();
+  menuList.innerHTML = '';
+  menuSelect.innerHTML = '<option value="">Select a meal</option>';
+  if (!menus.length){
+    menuList.innerHTML = '<div class="text-center">No menu available for today.</div>';
+    return;
+  }
+  menus.forEach(m => {
+    const div = document.createElement('div');
+    div.className = 'menu-item';
+    div.innerHTML = `<h4>${escapeHtml(m.name)}</h4>
+      ${m.description?'<p>'+escapeHtml(m.description)+'</p>':''}
+      ${m.type?'<p><strong>Type:</strong> '+escapeHtml(m.type)+'</p>':''}
+      <button data-id="${escapeHtml(m.id)}">Select</button>`;
+    div.querySelector('button').addEventListener('click', ()=> {
+      menuSelect.value = m.id.toString();
+      // scroll to actions
+      bookBtn.focus();
+    });
+    menuList.appendChild(div);
+    const opt = document.createElement('option');
+    opt.value = m.id; opt.textContent = m.name;
+    menuSelect.appendChild(opt);
+  });
+}
+
+/* ------------- Bookings handling & QR ------------- */
+function readBookings(){ return read(KEYS.BOOKINGS, []) || []; }
+function saveBookings(arr){ write(KEYS.BOOKINGS, arr); }
+
+function generateCode(){
+  return 'ANU' + Math.random().toString(36).slice(2,8).toUpperCase();
+}
+
+/* Show QR modal and allow download */
+let lastQrCanvas = null;
+function showQrModal(booking){
+  qrModalText.textContent = `Code: ${booking.code} — ${booking.menuName}`;
+  qrWrap.innerHTML = ''; // ephemeral container for QR
+  // create QR that encodes booking id (server-less). The QR encodes an object; staff scanner will parse code and mark used.
+  const payload = JSON.stringify({ code: booking.code });
+  const holder = document.createElement('div');
+  qrWrap.appendChild(holder);
+  // QRCode lib creates an img tag inside holder
+  const q = new QRCode(holder, { text: payload, width:160, height:160 });
+  // grab the generated img or canvas for download
+  setTimeout(()=> {
+    // qrcodejs puts an <img> or <canvas> inside
+    const img = holder.querySelector('img') || holder.querySelector('canvas');
+    lastQrCanvas = img;
+  }, 60);
+
+  // attach download handler
+  downloadQrBtn.onclick = () => {
+    if (!lastQrCanvas){
+      showToast('QR not ready yet'); return;
+    }
+    // if it's an <img>, convert to canvas to get dataURL
+    if (lastQrCanvas.tagName === 'IMG'){
+      // create canvas
+      const canvas = document.createElement('canvas');
+      canvas.width = lastQrCanvas.naturalWidth;
+      canvas.height = lastQrCanvas.naturalHeight;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(lastQrCanvas,0,0);
+      const data = canvas.toDataURL('image/png');
+      downloadDataUrl(data, `booking-${booking.code}.png`);
+    } else {
+      // canvas already
+      downloadDataUrl(lastQrCanvas.toDataURL('image/png'), `booking-${booking.code}.png`);
+    }
+  };
+
+  closeQrBtn.onclick = () => { qrBackdrop.style.display = 'none'; qrWrap.innerHTML = ''; lastQrCanvas = null; };
+  qrBackdrop.style.display = 'flex';
+}
+function downloadDataUrl(url, filename){
+  const a = document.createElement('a'); a.href = url; a.download = filename; document.body.appendChild(a);
+  a.click(); a.remove();
+}
+
+/* Render bookings table for logged-in student */
+function renderBookings(){
+  const all = readBookings();
+  const mine = all.filter(b => (b.studentId || b.username) == (session.id || session.username));
+  bookingsTable.innerHTML = '';
+  if (!mine.length){
+    bookingsTable.innerHTML = '<tr><td colspan="6" class="text-center">No bookings yet.</td></tr>';
+    return;
+  }
+  mine.slice().reverse().forEach(b => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `<td>${escapeHtml(b.date)}</td>
+      <td>${escapeHtml(b.menuName || b.meal || b.menuId || '')}</td>
+      <td>${escapeHtml(b.code)}</td>
+      <td>${escapeHtml(b.status || 'pending')}</td>
+      <td id="qrcell-${b.code}"></td>
+      <td><button data-code="${b.code}" class="cancel">Cancel</button></td>`;
+    bookingsTable.appendChild(tr);
+    // generate a small inline QR preview only for active bookings (pending) and show "Download" in modal when created
+    const qrCell = document.getElementById(`qrcell-${b.code}`);
+    if (b.status !== 'consumed'){
+      // small inline QR (70x70) for convenience
+      try {
+        const holder = document.createElement('div'); qrCell.appendChild(holder);
+        new QRCode(holder, { text: JSON.stringify({ code:b.code }), width:70, height:70 });
+        // also allow clicking the small qr to open full modal & download
+        holder.style.cursor = 'pointer';
+        holder.title = 'Click to open QR';
+        holder.addEventListener('click', ()=> showQrModal(b));
+      } catch(e){ console.warn(e) }
+    } else {
+      qrCell.innerHTML = '<small>Used</small>';
+    }
+
+    tr.querySelector('.cancel').addEventListener('click', ()=>{
+      if (!confirm('Cancel this booking?')) return;
+      const arr = readBookings().filter(x=> x.code !== b.code);
+      saveBookings(arr);
+      showToast('Booking cancelled');
+      renderBookings();
+    });
+  });
+}
+
+/* ------------- Book action ------------- */
+bookBtn.addEventListener('click', ()=>{
+  const sel = menuSelect.value;
+  if (!sel){ alert('Please select a meal'); return; }
+  const menus = read(KEYS.MENU, []) || [];
+  const menu = menus.find(m=> String(m.id) === String(sel));
+  if (!menu) { alert('Selected meal not found'); return; }
+
+  // ensure booking open
+  const settings = getSettings();
+  if (!isOpenNow(settings)){
+    alert('Booking is closed by system settings.');
+    return;
+  }
+
+  // prevent duplicate same-day booking
+  const today = new Date().toISOString().slice(0,10);
+  const existing = readBookings().some(b => (b.studentId || b.username) == (session.id || session.username) && b.date === today);
+  if (existing) { alert('You already have a booking for today. Modify it instead.'); return; }
+
+  const code = generateCode();
+  const booking = {
+    id: 'B' + Date.now(),
+    code,
+    studentId: session.id || session.username,
+    username: session.username || session.name,
+    menuId: menu.id,
+    menuName: menu.name,
+    date: menu.date || today,
+    status: 'pending',
+    used: false,
+    createdAt: new Date().toISOString()
+  };
+
+  const arr = readBookings();
+  arr.push(booking);
+  saveBookings(arr);
+
+  // show QR modal for immediate download
+  showQrModal(booking);
+
+  showToast(`Booking created (${booking.menuName}) — QR generated`);
+  renderBookings();
+});
+
+/* ------------- Real-time update wiring ------------- */
+/* - write() above dispatches 'localStoreChanged' for same-tab updates
+   - other tabs will receive the native 'storage' event
+   - both will trigger handleStorageChange to re-render UI immediately */
+
+function handleStorageChange(key, newValue){
+  if ([KEYS.MENU, KEYS.BOOKINGS, KEYS.SETTINGS].includes(key)){
+    // subtle UI actions
+    if (key === KEYS.MENU) {
+      showToast('Menu updated — refreshing');
+      renderMenus();
+    }
+    if (key === KEYS.BOOKINGS) {
+      renderBookings();
+    }
+    if (key === KEYS.SETTINGS) {
+      updateBadgeAndCountdown();
+      renderMenus();
+      renderBookings();
+    }
+  }
+}
+
+window.addEventListener('storage', (ev) => {
+  // fired in other tabs/windows when localStorage changes
+  try {
+    handleStorageChange(ev.key, ev.newValue ? JSON.parse(ev.newValue) : null);
+  } catch(e){ handleStorageChange(ev.key, null) }
+});
+
+// same-tab custom event
+window.addEventListener('localStoreChanged', (ev) => {
+  handleStorageChange(ev.detail.key, ev.detail.value);
+});
+
+/* ------------- Periodic updates ------------- */
+updateBadgeAndCountdown();
+renderMenus();
+renderBookings();
+setInterval(()=> {
+  updateBadgeAndCountdown();
+}, 30*1000);
+
+/* ------------- Logout ------------- */
+logoutBtn.addEventListener('click', ()=>{
+  localStorage.removeItem(KEYS.SESSION);
+  showToast('Logged out');
+  setTimeout(()=> location.href = 'login.html', 600);
+});
+
+/* ------------- Expose validator helper (for staff validation page) -------------
+   - Staff validation page can call window.validateBookingCode(code) after scanning QR.
+   - Alternatively, the staff validation page can read localStorage('anu_bookings') and mark the booking as used.
+-------------------------------------------------------- */
+window.validateBookingCode = function(code){
+  const arr = readBookings();
+  const idx = arr.findIndex(b => b.code === code);
+  if (idx === -1) return { ok:false, reason:'not_found' };
+  if (arr[idx].used || arr[idx].status === 'consumed') return { ok:false, reason:'already_used' };
+  // mark used (one-time)
+  arr[idx].used = true;
+  arr[idx].status = 'consumed';
+  write(KEYS.BOOKINGS, arr);
+  return { ok:true, booking: arr[idx] };
+};
+
+/* ------------- Small helper so admin/menu pages can call to signal change -------------
+   When other pages change menus/settings/bookings they should call write(KEY, newValue)
+   or simply use localStorage.setItem(...) and the native storage event will update other tabs.
+   For same-tab updates we use the write() wrapper.
+-------------------------------------------------------- */
+window.__ANU_UTILS = { read, write, showToast };
+
+</script>
+</body>
+</html>

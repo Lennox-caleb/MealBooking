@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Meal Validation | ANU Cafeteria</title>
+  <script src="https://unpkg.com/html5-qrcode"></script>
+  <style>
+    :root {
+      --red: #ff0000;
+      --yellow: #fac823;
+      --white: #ffffff;
+      --black: #000000;
+      --gray: #f7f7f7;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      display: flex;
+      background: var(--gray);
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background: linear-gradient(180deg, var(--red), var(--yellow));
+      color: var(--white);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px 10px;
+      position: fixed;
+      height: 100%;
+    }
+
+    .sidebar img {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 10px;
+    }
+
+    .sidebar h2 {
+      text-align: center;
+      font-size: 16px;
+      margin: 5px 0 15px;
+    }
+
+    .sidebar a {
+      color: var(--white);
+      text-decoration: none;
+      display: block;
+      width: 90%;
+      padding: 8px 15px;
+      border-radius: 8px;
+      margin: 3px 0;
+      transition: background 0.3s;
+    }
+
+    .sidebar a.active,
+    .sidebar a:hover {
+      background: rgba(255, 255, 255, 0.25);
+    }
+
+    .logout-btn {
+      margin-top: auto;
+      background: var(--black);
+      text-align: center;
+      padding: 10px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 90%;
+    }
+
+    /* Main section */
+    .main {
+      margin-left: 240px;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .topbar {
+      background: var(--white);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .topbar h1 {
+      color: var(--red);
+      margin: 0;
+      font-size: 20px;
+    }
+
+    .content {
+      padding: 25px;
+    }
+
+    .controls {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    input, select {
+      padding: 8px 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    button {
+      padding: 8px 14px;
+      border: none;
+      border-radius: 6px;
+      background: var(--red);
+      color: var(--white);
+      cursor: pointer;
+      transition: 0.3s;
+    }
+
+    button:hover {
+      background: #cc0000;
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: var(--white);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    th, td {
+      padding: 10px;
+      border-bottom: 1px solid #eee;
+      text-align: left;
+      font-size: 14px;
+    }
+
+    th {
+      background: var(--yellow);
+      color: var(--black);
+    }
+
+    tr:hover {
+      background: #f9f9f9;
+    }
+
+    .status {
+      padding: 4px 8px;
+      border-radius: 6px;
+      color: var(--white);
+      font-size: 12px;
+      text-transform: capitalize;
+    }
+
+    .pending { background: #999; }
+    .consumed { background: #28a745; }
+
+    /* QR Scanner */
+    #reader {
+      width: 320px;
+      margin-top: 10px;
+      border: 2px solid var(--yellow);
+      border-radius: 10px;
+      overflow: hidden;
+    }
+
+    .toast {
+      position: fixed;
+      top: 15px;
+      right: 15px;
+      background: var(--yellow);
+      color: var(--black);
+      padding: 12px 16px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.2);
+      animation: fadeInOut 3s ease forwards;
+    }
+
+    @keyframes fadeInOut {
+      0% { opacity: 0; transform: translateY(-10px); }
+      10%, 90% { opacity: 1; transform: translateY(0); }
+      100% { opacity: 0; transform: translateY(-10px); }
+    }
+  </style>
+</head>
+
+<body>
+  <div class="sidebar">
+    <img src="../public/ANU-Logo-PNG-logo (1).png" alt="ANU Logo">
+   
+    <a href="Dashboard.html">Dashboard</a>
+    <a href="BookingManagement.html">Booking Management</a>
+    <a href="MenuManagement.html">Menu Management</a>
+    <a href="MealValidation.html" class="active">Meal Validation</a>
+    <a href="Report.html">Reports</a>
+    <a href="UserManagement.html" class="restricted">User Management</a>
+    <a href="Setting.html" class="restricted">Settings</a>
+    <div class="logout-btn" id="logoutBtn">Logout</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h1>Meal Validation</h1>
+      <div>Welcome, <b id="adminName"></b></div>
+    </div>
+
+    <div class="content">
+      <div class="controls">
+        <input type="text" id="bookingCodeInput" placeholder="Enter Booking Code..." />
+        <button id="validateBtn">Validate Meal</button>
+        <button id="startScan">📷 Scan QR Code</button>
+        <select id="filterStatus">
+          <option value="">All Status</option>
+          <option value="pending">Pending</option>
+          <option value="consumed">Consumed</option>
+        </select>
+      </div>
+
+      <div id="reader" style="display:none;"></div>
+
+      <table>
+        <thead>
+          <tr>
+            <th>Code</th>
+            <th>Student</th>
+            <th>Meal</th>
+            <th>Date</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody id="validationBody"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    const logoutBtn = document.getElementById("logoutBtn");
+    const validateBtn = document.getElementById("validateBtn");
+    const bookingInput = document.getElementById("bookingCodeInput");
+    const validationBody = document.getElementById("validationBody");
+    const filterStatus = document.getElementById("filterStatus");
+    const adminName = document.getElementById("adminName");
+    const startScanBtn = document.getElementById("startScan");
+    const qrReader = document.getElementById("reader");
+
+    let html5QrCode;
+
+    const users = JSON.parse(localStorage.getItem("anu_users")) || [];
+    const menu = JSON.parse(localStorage.getItem("anu_menu")) || [];
+
+    // 🧩 Resolve real student name
+    function resolveStudentName(b) {
+      if (b.student && b.student !== "undefined") return b.student;
+      if (b.fullname && b.fullname !== "undefined") return b.fullname;
+      if (b.username) {
+        const u = users.find(u => u.username === b.username);
+        return u ? (u.fullname || u.username) : b.username;
+      }
+      if (b.userId) {
+        const u = users.find(u => u.id === b.userId);
+        return u ? (u.fullname || u.username) : "Unknown Student";
+      }
+      return "Unknown Student";
+    }
+
+    // 🍽️ Resolve real meal name
+    function resolveMealName(b) {
+      if (b.meal && b.meal !== "undefined") return b.meal;
+      if (b.mealName) return b.mealName;
+      if (b.menuId) {
+        const m = menu.find(m => m.id === b.menuId);
+        return m ? m.name : "—";
+      }
+      return "—";
+    }
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const session = JSON.parse(localStorage.getItem("anu_session"));
+      if (!session) return window.location.href = "../login.html";
+      adminName.textContent = session.username || "Admin";
+
+      if (session.role !== "Super Admin") {
+        document.querySelectorAll(".restricted").forEach(el => el.style.display = "none");
+      }
+
+      loadBookings();
+      filterStatus.addEventListener("change", loadBookings);
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem("anu_session");
+      window.location.href = "../login.html";
+    });
+
+    validateBtn.addEventListener("click", () => {
+      const code = bookingInput.value.trim();
+      if (!code) return showToast("Enter a booking code");
+
+      let bookings = JSON.parse(localStorage.getItem("anu_bookings")) || [];
+      const index = bookings.findIndex(b => b.code === code);
+      if (index === -1) return showToast("Booking not found");
+
+      if (bookings[index].status === "consumed") return showToast("Already validated");
+
+      bookings[index].status = "consumed";
+      localStorage.setItem("anu_bookings", JSON.stringify(bookings));
+
+      const studentName = resolveStudentName(bookings[index]);
+      const mealName = resolveMealName(bookings[index]);
+
+      logActivity(`Validated meal for ${studentName} (${mealName})`);
+      loadBookings();
+      showToast("Meal validated successfully!");
+      bookingInput.value = "";
+    });
+
+    function loadBookings() {
+      const bookings = JSON.parse(localStorage.getItem("anu_bookings")) || [];
+      const filter = filterStatus.value;
+      const filtered = filter ? bookings.filter(b => b.status === filter) : bookings;
+
+      validationBody.innerHTML = filtered.map(b => `
+        <tr>
+          <td>${b.code || "—"}</td>
+          <td>${resolveStudentName(b)}</td>
+          <td>${resolveMealName(b)}</td>
+          <td>${b.date ? new Date(b.date).toLocaleDateString() : "—"}</td>
+          <td><span class="status ${b.status}">${b.status}</span></td>
+        </tr>
+      `).join("");
+    }
+
+    // ✅ Log admin activity
+    function logActivity(action) {
+      const session = JSON.parse(localStorage.getItem("anu_session"));
+      const log = JSON.parse(localStorage.getItem("anu_activity_log")) || [];
+      log.push({
+        action,
+        user: session.username || "Unknown",
+        time: new Date().toISOString()
+      });
+      localStorage.setItem("anu_activity_log", JSON.stringify(log));
+      window.dispatchEvent(new StorageEvent("storage", { key: "anu_activity_log" }));
+    }
+
+    // ✅ Toast alert
+    function showToast(msg) {
+      const toast = document.createElement("div");
+      toast.className = "toast";
+      toast.textContent = msg;
+      document.body.appendChild(toast);
+      setTimeout(() => toast.remove(), 3000);
+    }
+
+    // ✅ QR Code scanning
+    startScanBtn.addEventListener("click", () => {
+      qrReader.style.display = qrReader.style.display === "none" ? "block" : "none";
+      if (qrReader.style.display === "block") startQRScanner();
+      else stopQRScanner();
+    });
+
+    function startQRScanner() {
+      if (!html5QrCode) html5QrCode = new Html5Qrcode("reader");
+      html5QrCode.start(
+        { facingMode: "environment" },
+        { fps: 10, qrbox: 200 },
+        (decodedText) => {
+          bookingInput.value = decodedText;
+          validateBtn.click();
+        },
+        (errorMsg) => {}
+      ).catch(err => showToast("Camera access denied"));
+    }
+
+    function stopQRScanner() {
+      if (html5QrCode) html5QrCode.stop();
+    }
+  </script>
+</body>
+</html>

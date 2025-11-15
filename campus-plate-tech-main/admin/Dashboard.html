@@ -1,0 +1,376 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Dashboard | ANU Admin</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <style>
+    :root {
+      --red: #ff0000;
+      --yellow: #fac823;
+      --white: #ffffff;
+      --black: #000000;
+      --gray-bg: #f6f6f6;
+      --transition: all 0.3s ease;
+    }
+
+    body {
+      margin: 0;
+      font-family: "Segoe UI", sans-serif;
+      background: var(--gray-bg);
+      display: flex;
+      min-height: 100vh;
+    }
+
+    /* Sidebar */
+    .sidebar {
+      width: 240px;
+      background: linear-gradient(180deg, var(--red), var(--yellow));
+      color: var(--white);
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      padding: 15px 10px;
+    }
+
+    .sidebar img {
+      width: 80px;
+      height: 80px;
+      margin-bottom: 8px;
+      transition: var(--transition);
+    }
+
+    .sidebar img:hover {
+      transform: scale(1.08);
+    }
+
+    .sidebar h2 {
+      text-align: center;
+      margin: 5px 0 20px;
+      font-size: 17px;
+    }
+
+    .sidebar a {
+      display: block;
+      color: var(--white);
+      padding: 10px 15px;
+      border-radius: 8px;
+      margin: 3px 0;
+      text-decoration: none;
+      width: 90%;
+      text-align: left;
+      transition: var(--transition);
+    }
+
+    .sidebar a.active,
+    .sidebar a:hover {
+      background: rgba(255, 255, 255, 0.25);
+      transform: translateX(5px);
+    }
+
+    .logout-btn {
+      margin-top: auto;
+      background: var(--black);
+      text-align: center;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 90%;
+      transition: var(--transition);
+      font-weight: bold;
+      letter-spacing: 0.5px;
+    }
+
+    .logout-btn:hover {
+      background: #222;
+      transform: scale(1.02);
+    }
+
+    /* Main Section */
+    .main {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      animation: fadeIn 0.6s ease;
+    }
+
+    .topbar {
+      background: var(--white);
+      box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+      padding: 15px 25px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+
+    .topbar h1 {
+      color: var(--red);
+      font-size: 20px;
+      margin: 0;
+    }
+
+    .content {
+      padding: 25px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 20px;
+    }
+
+    .card {
+      background: var(--white);
+      border-radius: 12px;
+      padding: 25px 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      text-align: center;
+      transition: var(--transition);
+      transform: translateY(20px);
+      opacity: 0;
+      animation: popIn 0.8s forwards;
+    }
+
+    .card:hover {
+      transform: translateY(-6px) scale(1.03);
+      box-shadow: 0 4px 14px rgba(0, 0, 0, 0.15);
+    }
+
+    @keyframes popIn {
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+
+    .card h3 {
+      color: var(--black);
+      margin-bottom: 10px;
+    }
+
+    .card .count {
+      font-size: 2.3em;
+      font-weight: bold;
+      color: var(--red);
+    }
+
+    .settings-info {
+      text-align: center;
+      margin-top: 15px;
+      font-size: 14px;
+      color: #444;
+    }
+
+    /* Chart Section */
+    .chart-container {
+      margin: 25px 30px;
+      background: var(--white);
+      border-radius: 12px;
+      padding: 18px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+      animation: fadeIn 1s ease;
+      max-width: 700px;
+      align-self: center;
+    }
+
+    .chart-controls {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 15px;
+    }
+
+    .chart-controls select {
+      padding: 6px 10px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+    }
+
+    /* System Logs Section */
+    .logs-container {
+      margin: 20px 30px;
+      background: var(--white);
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      padding: 15px 20px;
+      max-height: 240px;
+      overflow-y: auto;
+    }
+
+    .logs-container h3 {
+      color: var(--red);
+      margin-bottom: 10px;
+    }
+
+    .log-entry {
+      border-bottom: 1px solid #eee;
+      padding: 6px 0;
+      font-size: 14px;
+      color: #333;
+    }
+
+    @keyframes fadeIn {
+      from { opacity: 0; transform: translateY(10px); }
+      to { opacity: 1; transform: translateY(0); }
+    }
+  </style>
+</head>
+<body>
+  <div class="sidebar">
+    <img src="../public/ANU-Logo-PNG-logo (1).png" alt="ANU Logo">
+    <a href="Dashboard.html" class="active">Dashboard</a>
+    <a href="BookingManagement.html">Booking Management</a>
+    <a href="MenuManagement.html">Menu Management</a>
+    <a href="MealValidation.html">Meal Validation</a>
+    <a href="Report.html">Reports</a>
+    <a href="UserManagement.html" class="restricted">User Management</a>
+    <a href="Setting.html" class="restricted">Settings</a>
+    <div class="logout-btn" id="logoutBtn">Logout</div>
+  </div>
+
+  <div class="main">
+    <div class="topbar">
+      <h1>Dashboard</h1>
+      <span id="welcomeText"></span>
+    </div>
+
+    <div class="content">
+      <div class="card"><h3>Total Bookings</h3><div class="count" id="bookingCount">0</div></div>
+      <div class="card"><h3>Total Menus</h3><div class="count" id="menuCount">0</div></div>
+      <div class="card"><h3>Registered Students</h3><div class="count" id="studentCount">0</div></div>
+    </div>
+
+    <div class="chart-container">
+      <div class="chart-controls">
+        <h3>Summary Chart</h3>
+        <select id="chartTypeSelect">
+          <option value="day">Bookings by Day</option>
+          <option value="meal">Bookings by Meal Type</option>
+        </select>
+      </div>
+      <canvas id="bookingChart" height="80"></canvas>
+    </div>
+
+    <div class="logs-container" id="logsContainer">
+      <h3>System Logs</h3>
+      <div id="logEntries">Loading logs...</div>
+    </div>
+
+    <div class="settings-info" id="settingsInfo"></div>
+  </div>
+
+  <script>
+    const logoutBtn = document.getElementById("logoutBtn");
+    const welcomeText = document.getElementById("welcomeText");
+    const chartSelect = document.getElementById("chartTypeSelect");
+    const logsContainer = document.getElementById("logEntries");
+
+    const counts = {
+      booking: document.getElementById("bookingCount"),
+      menu: document.getElementById("menuCount"),
+      student: document.getElementById("studentCount")
+    };
+
+    let bookingChart;
+
+    function loadDashboardData() {
+      const bookings = JSON.parse(localStorage.getItem("anu_bookings")) || [];
+      const menus = JSON.parse(localStorage.getItem("anu_menu")) || [];
+      const users = JSON.parse(localStorage.getItem("anu_users")) || [];
+      const settings = JSON.parse(localStorage.getItem("anu_settings")) || {};
+      const logs = JSON.parse(localStorage.getItem("anu_logs")) || [];
+
+      counts.booking.textContent = bookings.length;
+      counts.menu.textContent = menus.length;
+      counts.student.textContent = users.filter(u => u.role === "student").length;
+
+      updateBookingChart(bookings);
+      renderLogs(logs);
+    }
+
+    function getChartData(bookings, type) {
+      const result = {};
+      if (type === "day") {
+        bookings.forEach(b => {
+          const d = b.date || "Unknown";
+          result[d] = (result[d] || 0) + 1;
+        });
+      } else if (type === "meal") {
+        bookings.forEach(b => {
+          const m = b.meal || "Unknown Meal";
+          result[m] = (result[m] || 0) + 1;
+        });
+      }
+      return { labels: Object.keys(result), data: Object.values(result) };
+    }
+
+    function updateBookingChart(bookings) {
+      const type = chartSelect.value;
+      const { labels, data } = getChartData(bookings, type);
+      const ctx = document.getElementById("bookingChart").getContext("2d");
+      if (bookingChart) bookingChart.destroy();
+      bookingChart = new Chart(ctx, {
+        type: "line",
+        data: {
+          labels,
+          datasets: [{
+            label: type === "day" ? "Bookings per Day" : "Bookings by Meal Type",
+            data,
+            fill: true,
+            borderColor: "rgba(255,0,0,0.8)",
+            backgroundColor: "rgba(255,0,0,0.15)",
+            tension: 0.3,
+            pointBackgroundColor: "rgba(255,0,0,0.9)"
+          }]
+        },
+        options: {
+          responsive: true,
+          plugins: { legend: { display: false } },
+          animation: { duration: 1000, easing: "easeOutQuad" },
+          scales: { y: { beginAtZero: true } }
+        }
+      });
+    }
+
+    function renderLogs(logs) {
+      if (!logs.length) {
+        logsContainer.innerHTML = "<em>No logs available yet.</em>";
+        return;
+      }
+      logsContainer.innerHTML = logs.slice(-20).reverse()
+        .map(log => `<div class="log-entry">[${log.time}] ${log.action}</div>`)
+        .join("");
+    }
+
+    chartSelect.addEventListener("change", () => {
+      const bookings = JSON.parse(localStorage.getItem("anu_bookings")) || [];
+      updateBookingChart(bookings);
+    });
+
+    window.addEventListener("DOMContentLoaded", () => {
+      const session = JSON.parse(localStorage.getItem("anu_session"));
+      if (!session) {
+        alert("Please login first.");
+        window.location.href = "../login.html";
+        return;
+      }
+      welcomeText.textContent = `Welcome, ${session.fullname || session.username} (${session.role})`;
+      if (session.role.toLowerCase() === "admin") {
+        document.querySelectorAll(".restricted").forEach(el => el.remove());
+      }
+      loadDashboardData();
+    });
+
+    window.addEventListener("storage", (e) => {
+      if (e.key && e.key.startsWith("anu_")) loadDashboardData();
+    });
+
+    logoutBtn.addEventListener("click", () => {
+      localStorage.removeItem("anu_session");
+      window.location.href = "../login.html";
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,231 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>ANU Meal Booking Login</title>
+  <style>
+    /* --- your existing CSS exactly as before --- */
+    body {
+      margin: 0;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 100vh;
+      overflow: hidden;
+      background: #000;
+      position: relative;
+    }
+    body::before {
+      content: "";
+      position: absolute;
+      inset: 0;
+      background: linear-gradient(rgba(0, 0, 0, 0.6), rgba(0, 0, 0, 0.7)),
+        url('public/HELSTROM.jpg') no-repeat center center/cover;
+      z-index: -1;
+      transform: scale(1);
+      opacity: 0.9;
+      animation: zoomFade 25s ease-in-out infinite alternate;
+    }
+    @keyframes zoomFade {
+      0% { transform: scale(1); opacity: 0.9; }
+      100% { transform: scale(1.1); opacity: 1; }
+    }
+    @keyframes slideInLeft {
+      from { opacity: 0; transform: translateX(-80px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    @keyframes fadeInRight {
+      from { opacity: 0; transform: translateX(80px); }
+      to { opacity: 1; transform: translateX(0); }
+    }
+    .container {
+      display: flex;
+      flex-direction: column;
+      width: 90%;
+      max-width: 640px;
+      background: rgba(255, 255, 255, 0.82);
+      backdrop-filter: blur(14px);
+      border-radius: 18px;
+      box-shadow: 0 8px 30px rgba(0, 0, 0, 0.5);
+      overflow: hidden;
+      position: relative;
+      z-index: 1;
+    }
+    @media (min-width: 768px) {
+      .container { flex-direction: row; }
+    }
+    .branding {
+      background: linear-gradient(135deg, #ff0000, #fac823);
+      color: #ffffff;
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: center;
+      align-items: center;
+      padding: 25px;
+      text-align: center;
+      animation: slideInLeft 1.3s ease-out;
+    }
+    .branding img {
+      width: 95px;
+      height: auto;
+      margin-bottom: 15px;
+      border: none;
+      background: none;
+      filter: none;
+    }
+    .branding h2 { font-size: 20px; margin-bottom: 8px; color: #fff; }
+    .branding p { font-size: 13px; opacity: 0.95; max-width: 240px; line-height: 1.5; }
+    .form-section {
+      flex: 1;
+      padding: 30px;
+      background: rgba(255, 255, 255, 0.75);
+      animation: fadeInRight 1.5s ease-out;
+      border-left: 2px solid rgba(255, 0, 0, 0.25);
+    }
+    .form-section h3 { color: #ff0000; font-size: 20px; text-align: center; }
+    .form-section p { color: #333; text-align: center; font-size: 13px; }
+    .demo-box {
+      background: #fff9e6;
+      border: 1px solid #fac823;
+      border-radius: 10px;
+      padding: 10px;
+      font-size: 13px;
+      margin-bottom: 18px;
+    }
+    .demo-box code { background: #fff3bf; padding: 2px 5px; border-radius: 5px; }
+    label { display: block; margin-bottom: 6px; font-weight: 500; font-size: 14px; }
+    input[type="text"], input[type="password"] {
+      width: 100%; padding: 10px; border-radius: 8px; border: 1px solid #ccc;
+      margin-bottom: 15px; font-size: 14px; transition: border-color 0.3s ease;
+    }
+    input:focus { border-color: #ff0000; outline: none; }
+    .password-row { display: flex; gap: 10px; }
+    .btn {
+      background: linear-gradient(135deg, #ff0000, #fac823);
+      color: #fff; border: none; border-radius: 8px; padding: 10px 15px;
+      cursor: pointer; width: 100%; font-weight: bold; transition: all 0.4s ease;
+    }
+    .btn:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(255,0,0,0.4); }
+    .outline-btn {
+      background: #fff; border: 1px solid #000; color: #000;
+      border-radius: 8px; padding: 8px 12px; cursor: pointer; transition: 0.3s;
+    }
+    .outline-btn:hover { background: #fac823; }
+    .checkbox { display: flex; align-items: center; gap: 6px; font-size: 13px; }
+    .footer { text-align: center; margin-top: 18px; font-size: 13px; }
+    .footer a { color: #ff0000; text-decoration: none; font-weight: 600; }
+    .footer a:hover { text-decoration: underline; }
+    #toast {
+      position: fixed; top: 20px; right: 20px; background: #333;
+      color: #fff; padding: 12px 18px; border-radius: 8px;
+      opacity: 0; transition: opacity 0.3s ease; z-index: 1000; font-size: 15px;
+    }
+    #toast.show { opacity: 1; }
+  </style>
+</head>
+<body>
+  <div id="toast"></div>
+  <div class="container">
+    <div class="branding">
+      <img src="public/ANU-Logo-PNG-logo (1).png" alt="ANU Logo">
+      <h2>ANU Meal Booking System</h2>
+      <p>Book your meals, view menus, and help reduce food waste with ANU’s smart system.</p>
+    </div>
+
+    <div class="form-section">
+      <h3>Welcome Back</h3>
+      <p>Sign in to your account</p>
+
+      <div class="demo-box">
+        <strong>Demo Credentials:</strong><br>
+        Super Admin: <code>superadmin / admin123</code><br>
+        Admin: <code>admin / admin123</code><br>
+        Student: <code>student / student123</code>
+      </div>
+
+      <form id="loginForm">
+        <label for="username">Username</label>
+        <input type="text" id="username" required />
+
+        <label for="password">Password</label>
+        <div class="password-row">
+          <input type="password" id="password" required />
+          <button type="button" class="outline-btn" id="togglePassword">Show</button>
+        </div>
+
+        <div class="checkbox">
+          <input type="checkbox" id="remember" />
+          <label for="remember">Remember me</label>
+        </div>
+
+        <button type="submit" class="btn" id="loginBtn">Sign In</button>
+        <div class="footer"><a href="https://www.anu.ac.ke" target="_blank">Visit ANU Website</a></div>
+      </form>
+    </div>
+  </div>
+
+  <script>
+    const toast = document.getElementById('toast');
+    function showToast(msg, ok=true){
+      toast.textContent = msg;
+      toast.style.background = ok ? '#2e7d32' : '#c62828';
+      toast.classList.add('show');
+      setTimeout(()=>toast.classList.remove('show'),2500);
+    }
+
+    document.getElementById('togglePassword').addEventListener('click', function(){
+      const pass = document.getElementById('password');
+      pass.type = pass.type === 'password' ? 'text' : 'password';
+      this.textContent = pass.type === 'text' ? 'Hide' : 'Show';
+    });
+
+    // Initialize demo users
+    const demoUsers = [
+      { username: 'superadmin', password: 'admin123', role: 'super_admin' },
+      { username: 'admin', password: 'admin123', role: 'admin' },
+      { username: 'student', password: 'student123', role: 'student' }
+    ];
+    if(!localStorage.getItem('anu_users')) localStorage.setItem('anu_users', JSON.stringify(demoUsers));
+
+    // Redirect if already logged in
+    const session = JSON.parse(localStorage.getItem('anu_session'));
+    if(session?.role) redirectUser(session.role);
+
+    document.getElementById('loginForm').addEventListener('submit', e=>{
+      e.preventDefault();
+      const username = document.getElementById('username').value.trim().toLowerCase();
+      const password = document.getElementById('password').value.trim();
+      const btn = document.getElementById('loginBtn');
+      btn.disabled = true; btn.textContent = 'Signing in...';
+
+      const users = JSON.parse(localStorage.getItem('anu_users')) || [];
+      const user = users.find(u => u.username.toLowerCase() === username && u.password === password);
+
+      setTimeout(()=>{
+        if(user){
+          localStorage.setItem('anu_session', JSON.stringify({ username: user.username, role: user.role }));
+          showToast(`Welcome, ${user.username}!`);
+          setTimeout(()=>redirectUser(user.role), 1200);
+        }else{
+          showToast('Invalid credentials', false);
+          btn.disabled = false; btn.textContent = 'Sign In';
+        }
+      },700);
+    });
+
+    function redirectUser(role){
+      role = role.toLowerCase();
+      if(role === 'super_admin' || role === 'admin'){
+        window.location.href = 'admin/Dashboard.html';
+      }else if(role === 'student'){
+        window.location.href = 'Student.html';
+      }else{
+        showToast('Unknown role', false);
+      }
+    }
+  </script>
+</body>
+</html>
